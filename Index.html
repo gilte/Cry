@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerar Chaves Sequenciais com Entropia</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h2 {
+            color: #555;
+        }
+        form {
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 600px;
+            background-color: #fff;
+            padding: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border-radius: 8px;
+        }
+        label {
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #results {
+            width: 100%;
+            max-width: 600px;
+            background-color: #fff;
+            padding: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            max-height: 300px;
+            overflow-y: scroll;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+        }
+        #counter {
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .button-container {
+            display: flex;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h2>Gerar Chaves com Entropia Sequencial</h2>
+    <form id="keyForm">
+        <label for="initialKey">Insira a chave inicial (64 caracteres):</label>
+        <input type="text" id="initialKey" maxlength="64" placeholder="Digite 64 caracteres...">
+        <label for="stopKey">Insira a chave hexadecimal para parar a geração:</label>
+        <input type="text" id="stopKey" maxlength="64" placeholder="Digite a chave hexadecimal...">
+        <div class="button-container">
+            <button type="button" onclick="startGeneratingKeys()">Gerar Chaves</button>
+            <button type="button" onclick="stopGeneratingKeys()">Parar Geração</button>
+            <button type="button" onclick="restartGeneratingKeys()">Reiniciar Geração</button>
+        </div>
+    </form>
+
+    <div id="counter">Chaves Geradas: 0</div>
+    <div id="results"></div>
+
+    <script>
+        let generatedKeys = [];
+        let currentKey = '';
+        let totalKeys = 100;  // Definir o número de chaves que você deseja gerar
+        let batchSize = 1;
+        let stop = false;  // Variável de controle para parar a geração
+        let generating = false; // Variável para controlar o estado de geração
+
+        function startGeneratingKeys() {
+            const initialKey = document.getElementById('initialKey').value.trim();
+            const stopKey = document.getElementById('stopKey').value.trim().toUpperCase();
+            if (initialKey.length !== 64) {
+                document.getElementById('results').innerText = 'A chave inicial deve ter exatamente 64 caracteres.';
+                return;
+            }
+
+            if (generating) {
+                document.getElementById('results').innerText = 'Já está gerando chaves.';
+                return;
+            }
+
+            stop = false;  // Reseta a variável stop
+            currentKey = initialKey;
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('counter').innerText = `Chaves Geradas: ${generatedKeys.length}`;
+            generating = true; // Marca como gerando
+
+            // Inicia a geração por lotes
+            generateBatch(stopKey);
+        }
+
+        function generateBatch(stopKey) {
+            if (stop) {
+                generating = false; // Marca como não gerando
+                return;  // Para a geração se stop for verdadeiro
+            }
+
+            let newKeys = [];
+
+            for (let i = 0; i < batchSize && generatedKeys.length < totalKeys; i++) {
+                currentKey = CryptoJS.SHA256(currentKey).toString(CryptoJS.enc.Hex).toUpperCase();
+                newKeys.push(currentKey);
+                generatedKeys.push(currentKey);
+
+                // Verifica se a chave gerada é a mesma que a chave de parada
+                if (currentKey === stopKey) {
+                    document.getElementById('results').innerText = `Chave de parada encontrada: ${currentKey}`;
+                    stop = true; // Para a geração se a chave for encontrada
+                    break;
+                }
+            }
+
+            displayKeys(newKeys);
+            updateCounter();
+
+            if (generatedKeys.length < totalKeys && !stop) {
+                setTimeout(() => generateBatch(stopKey), 1); // Gera o próximo lote após 1ms
+            } else {
+                generating = false; // Marca como não gerando quando terminar
+            }
+        }
+
+        function displayKeys(keys) {
+            const resultsContainer = document.getElementById('results');
+            resultsContainer.innerHTML += keys.map(key => `<p>${key}</p>`).join('');
+        }
+
+        function updateCounter() {
+            const counterElement = document.getElementById('counter');
+            counterElement.innerText = `Chaves Geradas: ${generatedKeys.length}`;
+        }
+
+        function stopGeneratingKeys() {
+            stop = true;  // Altera a variável para parar a geração
+        }
+
+        function restartGeneratingKeys() {
+            if (!generating) {
+                startGeneratingKeys();  // Inicia a geração se não estiver rodando
+            }
+        }
+    </script>
+</body>
+</html>
