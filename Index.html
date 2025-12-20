@@ -6317,84 +6317,82 @@
     <div id="results"></div>
 
     <script>
-        let generatedKeys = [];
         let currentKey = '';
-        let totalKeys = 100;  // Definir o número de chaves que você deseja gerar
-        let batchSize = 1;
-        let stop = false;  // Variável de controle para parar a geração
-        let generating = false; // Variável para controlar o estado de geração
+        let totalKeys = 77777;
+        let stop = false;
+        let generating = false;
+        let count = 0;
 
         function startGeneratingKeys() {
             const initialKey = document.getElementById('initialKey').value.trim();
             const stopKey = document.getElementById('stopKey').value.trim().toUpperCase();
+            
             if (initialKey.length !== 64) {
                 document.getElementById('results').innerText = 'A chave inicial deve ter exatamente 64 caracteres.';
                 return;
             }
 
-            if (generating) {
-                document.getElementById('results').innerText = 'Já está gerando chaves.';
-                return;
-            }
+            if (generating) return;
 
-            stop = false;  // Reseta a variável stop
+            stop = false;
+            generating = true;
             currentKey = initialKey;
-            document.getElementById('results').innerHTML = '';
-            document.getElementById('counter').innerText = `Chaves Geradas: ${generatedKeys.length}`;
-            generating = true; // Marca como gerando
-
-            // Inicia a geração por lotes
+            count = 0;
+            document.getElementById('results').innerHTML = 'Iniciando processamento de entropia...';
+            
             generateBatch(stopKey);
         }
 
         function generateBatch(stopKey) {
             if (stop) {
-                generating = false; // Marca como não gerando
-                return;  // Para a geração se stop for verdadeiro
+                generating = false;
+                return;
             }
 
-            let newKeys = [];
-
-            for (let i = 0; i < batchSize && generatedKeys.length < totalKeys; i++) {
+            // Processa 1500 chaves de uma vez para ganhar velocidade sem travar o áudio do DJ
+            for (let i = 0; i < 1500 && count < totalKeys; i++) {
                 currentKey = CryptoJS.SHA256(currentKey).toString(CryptoJS.enc.Hex).toUpperCase();
-                newKeys.push(currentKey);
-                generatedKeys.push(currentKey);
+                count++;
 
-                // Verifica se a chave gerada é a mesma que a chave de parada
                 if (currentKey === stopKey) {
-                    document.getElementById('results').innerText = `Chave de parada encontrada: ${currentKey}`;
-                    stop = true; // Para a geração se a chave for encontrada
+                    stop = true;
                     break;
                 }
             }
 
-            displayKeys(newKeys);
-            updateCounter();
+            // Atualiza o contador e a última chave na tela para o público ver o movimento
+            updateDisplay();
 
-            if (generatedKeys.length < totalKeys && !stop) {
-                setTimeout(() => generateBatch(stopKey), 1); // Gera o próximo lote após 1ms
+            if (count < totalKeys && !stop) {
+                setTimeout(() => generateBatch(stopKey), 1);
             } else {
-                generating = false; // Marca como não gerando quando terminar
+                generating = false;
+                finalizeDisplay();
             }
         }
 
-        function displayKeys(keys) {
-            const resultsContainer = document.getElementById('results');
-            resultsContainer.innerHTML += keys.map(key => `<p>${key}</p>`).join('');
+        function updateDisplay() {
+            document.getElementById('counter').innerText = `Chaves Geradas: ${count}`;
+            // Mostra apenas a chave atual no campo de resultados para criar o efeito visual
+            document.getElementById('results').innerHTML = `<p style="word-break: break-all; opacity: 0.7;">${currentKey}</p>`;
         }
 
-        function updateCounter() {
-            const counterElement = document.getElementById('counter');
-            counterElement.innerText = `Chaves Geradas: ${generatedKeys.length}`;
+        function finalizeDisplay() {
+            document.getElementById('results').innerHTML = `
+                <div style="border: 2px solid #00ff00; padding: 10px; margin-top: 10px; background: rgba(0,255,0,0.1);">
+                    <h3 style="margin: 0;">GERAÇÃO FINALIZADA</h3>
+                    <p style="word-break: break-all; font-weight: bold;">${currentKey}</p>
+                </div>`;
         }
 
         function stopGeneratingKeys() {
-            stop = true;  // Altera a variável para parar a geração
+            stop = true;
+            generating = false;
         }
 
         function restartGeneratingKeys() {
             if (!generating) {
-                startGeneratingKeys();  // Inicia a geração se não estiver rodando
+                startGeneratingKeys();
             }
         }
     </script>
